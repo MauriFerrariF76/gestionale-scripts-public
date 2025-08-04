@@ -43,4 +43,4 @@ sudo ./deploy-vm-automatico.sh
 
 ---
 **Versione**: v1.0.0  
-**Autore**: Mauri Ferrari # Test git hook - Mon Aug  4 12:28:09 PM CEST 2025
+**Autore**: Mauri Ferrari 

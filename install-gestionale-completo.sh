@@ -140,7 +140,7 @@ install_development_tools() {
     apt install -y strace ltrace gdb
     
     log_info "Installazione strumenti di analisi rete..."
-    apt install -y tcpdump nmap netcat
+    apt install -y tcpdump nmap netcat-openbsd
     
     log_info "Installazione strumenti di compressione..."
     apt install -y zip unzip tar gzip bzip2
