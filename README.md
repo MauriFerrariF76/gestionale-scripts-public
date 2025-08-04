@@ -52,4 +52,4 @@ sudo ./deploy-vm-automatico.sh
 
 ---
 **Versione**: v1.0.0  
-**Autore**: Mauri Ferrari 
+**Autore**: Mauri Ferrari # Test sincronizzazione
