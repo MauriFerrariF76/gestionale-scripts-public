@@ -60,10 +60,10 @@ check_prerequisites() {
         log_success "Memoria: ${MEMORY_GB}GB"
     fi
     
-    # Verifica spazio disco (min 10GB)
+    # Verifica spazio disco (min 3GB per VM di test)
     DISK_GB=$(df -BG / | awk 'NR==2{print $4}' | sed 's/G//')
-    if [ "$DISK_GB" -lt 10 ]; then
-        log_error "Spazio disco insufficiente: ${DISK_GB}GB (minimo 10GB)"
+    if [ "$DISK_GB" -lt 3 ]; then
+        log_error "Spazio disco insufficiente: ${DISK_GB}GB (minimo 3GB per VM di test)"
         exit 1
     else
         log_success "Spazio disco: ${DISK_GB}GB"
