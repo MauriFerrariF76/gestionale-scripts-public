@@ -121,7 +121,8 @@ install_nodejs() {
     
     # Installazione globali utili
     log_info "Installazione pacchetti globali npm..."
-    npm install -g npm@latest
+    # Usa versione npm compatibile con Node.js 18
+    npm install -g npm@10.8.2
     npm install -g yarn
     
     log_success "Node.js e npm configurati"
