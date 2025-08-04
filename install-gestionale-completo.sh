@@ -125,15 +125,15 @@ install_docker() {
     systemctl enable docker
     
     log_info "Installazione Docker Compose standalone..."
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
+    # Docker Compose è ora integrato in Docker, non serve installazione separata
+# Verifica che docker compose sia disponibile
     
     log_info "Configurazione utente Docker..."
     usermod -aG docker mauri
     
     # Verifica installazione
     DOCKER_VERSION=$(docker --version)
-    COMPOSE_VERSION=$(docker-compose --version)
+    COMPOSE_VERSION=$(docker compose version)
     
     log_success "Docker installato: $DOCKER_VERSION"
     log_success "Docker Compose: $COMPOSE_VERSION"
@@ -311,9 +311,9 @@ post_install_checks() {
     log_info "=== VERIFICHE POST-INSTALLAZIONE ==="
     
     log_info "Verifica Docker..."
-    if command -v docker > /dev/null && command -v docker-compose > /dev/null; then
+    if command -v docker > /dev/null && docker compose version > /dev/null 2>&1; then
         log_success "Docker: $(docker --version)"
-        log_success "Docker Compose: $(docker-compose --version)"
+        log_success "Docker Compose: $(docker compose version)"
     else
         log_error "Docker o Docker Compose non installati"
     fi
@@ -374,7 +374,7 @@ Kernel: $(uname -r)
 IP: $(ip route get 8.8.8.8 | awk '{print $7}')
 SSH Porta: 27
 Docker: $(docker --version)
-Docker Compose: $(docker-compose --version)
+Docker Compose: $(docker compose version)
 
 === CONTAINER ATTIVI ===
 $(docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}")
@@ -395,9 +395,9 @@ Database: $(ip route get 8.8.8.8 | awk '{print $7}'):5433
 
 === COMANDI UTILI ===
 Stato container: docker ps
-Log container: docker-compose logs -f
-Ferma servizi: docker-compose down
-Avvia servizi: docker-compose up -d
+Log container: docker compose logs -f
+Ferma servizi: docker compose down
+Avvia servizi: docker compose up -d
 EOF
     
     log_success "Report generato: $REPORT_FILE"

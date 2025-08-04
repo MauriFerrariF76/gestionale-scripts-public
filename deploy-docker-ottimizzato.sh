@@ -37,7 +37,7 @@ if ! command -v docker > /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose > /dev/null; then
+if ! command -v docker > /dev/null || ! docker compose version > /dev/null 2>&1; then
     log_error "Docker Compose non installato"
     exit 1
 fi
@@ -53,19 +53,19 @@ fi
 
 # Build e avvio container
 log_info "Build e avvio container..."
-docker-compose down 2>/dev/null || true
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down 2>/dev/null || true
+docker compose build --no-cache
+docker compose up -d
 
 # Verifica container
 log_info "Verifica container..."
 sleep 10
 
-if docker-compose ps | grep -q "Up"; then
+if docker compose ps | grep -q "Up"; then
     log_success "Container avviati"
 else
     log_error "Errore nell'avvio container"
-    docker-compose logs
+    docker compose logs
     exit 1
 fi
 
@@ -97,7 +97,7 @@ echo ""
 log_success "Deploy completato!"
 echo ""
 log_info "Comandi utili:"
-log_info "  docker-compose ps          # Stato container"
-log_info "  docker-compose logs        # Log container"
-log_info "  docker-compose down        # Stop container"
-log_info "  docker-compose up -d       # Riavvio container" 
+log_info "  docker compose ps          # Stato container"
+log_info "  docker compose logs        # Log container"
+log_info "  docker compose down        # Stop container"
+log_info "  docker compose up -d       # Riavvio container" 
