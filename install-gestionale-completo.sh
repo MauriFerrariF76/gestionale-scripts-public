@@ -1,6 +1,6 @@
 #!/bin/bash
 # install-gestionale-completo.sh - Installazione automatica Gestionale
-# Versione: 1.0.0
+# Versione: 2.0.0
 # Basato su: Server fisico 10.10.10.15 (configurazione ideale)
 # SSH Porta: 27
 
@@ -100,8 +100,8 @@ update_system() {
     echo ""
 }
 
-# Installazione Docker (sostituisce Node.js host)
-install_docker_only() {
+# Installazione Docker (versione corretta)
+install_docker() {
     log_info "=== INSTALLAZIONE DOCKER ==="
     
     log_info "Rimozione versioni precedenti..."
@@ -120,43 +120,24 @@ install_docker_only() {
     log_info "Installazione Docker..."
     apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
     
-    log_info "Configurazione utente Docker..."
-    usermod -aG docker $SUDO_USER
-    
-    log_info "Avvio servizio Docker..."
-    systemctl enable docker
+    log_info "Avvio e abilitazione Docker..."
     systemctl start docker
+    systemctl enable docker
+    
+    log_info "Installazione Docker Compose standalone..."
+    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+    
+    log_info "Configurazione utente Docker..."
+    usermod -aG docker mauri
     
     # Verifica installazione
     DOCKER_VERSION=$(docker --version)
-    COMPOSE_VERSION=$(docker compose version)
+    COMPOSE_VERSION=$(docker-compose --version)
     
     log_success "Docker installato: $DOCKER_VERSION"
     log_success "Docker Compose: $COMPOSE_VERSION"
     log_success "Docker configurato"
-    echo ""
-}
-
-# Installazione strumenti essenziali per Docker
-install_essential_tools() {
-    log_info "=== INSTALLAZIONE STRUMENTI ESSENZIALI ==="
-    
-    log_info "Installazione strumenti di sistema..."
-    apt install -y curl wget git htop net-tools
-    
-    log_info "Installazione client PostgreSQL..."
-    apt install -y postgresql-client
-    
-    log_info "Installazione Certbot per SSL..."
-    apt install -y certbot python3-certbot-nginx
-    
-    log_info "Installazione strumenti di compressione..."
-    apt install -y zip unzip tar gzip bzip2
-    
-    log_info "Installazione editor di testo..."
-    apt install -y nano
-    
-    log_success "Strumenti essenziali installati"
     echo ""
 }
 
@@ -226,56 +207,31 @@ configure_firewall() {
     echo ""
 }
 
-# Installazione Docker
-install_docker() {
-    log_info "=== INSTALLAZIONE DOCKER ==="
-    
-    log_info "Rimozione versioni precedenti..."
-    apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
-    
-    log_info "Installazione prerequisiti Docker..."
-    apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
-    
-    log_info "Aggiunta repository Docker..."
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
-    log_info "Installazione Docker..."
-    apt update
-    apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    
-    log_info "Avvio e abilitazione Docker..."
-    systemctl start docker
-    systemctl enable docker
-    
-    log_info "Installazione Docker Compose standalone..."
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    
-    log_info "Configurazione utente Docker..."
-    usermod -aG docker mauri
-    
-    log_success "Docker installato"
-    echo ""
-}
-
-# Clonazione repository
+# Clonazione repository (versione corretta)
 clone_repository() {
     log_info "=== CLONAZIONE REPOSITORY ==="
     
-    log_info "Clonazione repository gestionale..."
     cd /home/mauri
+    
+    # Rimuovi directory esistente se presente
     if [ -d "gestionale-fullstack" ]; then
-        log_info "Repository esistente, aggiornamento..."
-        cd gestionale-fullstack
-        git pull
-    else
-        log_info "Clonazione nuovo repository..."
-        git clone https://github.com/mauri/gestionale-fullstack.git
-        cd gestionale-fullstack
+        log_info "Rimozione directory esistente..."
+        rm -rf gestionale-fullstack
     fi
     
-    log_success "Repository clonato"
+    log_info "Clonazione repository gestionale..."
+    git clone https://github.com/MauriFerrariF76/gestionale-fullstack.git
+    
+    if [ $? -eq 0 ]; then
+        log_success "Repository clonato con successo"
+    else
+        log_error "Errore durante la clonazione del repository"
+        exit 1
+    fi
+    
+    cd gestionale-fullstack
+    
+    log_success "Repository configurato"
     echo ""
 }
 
@@ -300,6 +256,53 @@ setup_application() {
     docker compose up -d --build
     
     log_success "Applicazione configurata"
+    echo ""
+}
+
+# Configurazione SSL/HTTPS (opzionale)
+setup_ssl() {
+    log_info "=== CONFIGURAZIONE SSL/HTTPS ==="
+    
+    log_info "Verifica dominio..."
+    DOMAIN="gestionale.carpenteriaferrari.com"
+    
+    # Verifica se il dominio è configurato
+    if nslookup $DOMAIN > /dev/null 2>&1; then
+        log_info "Dominio $DOMAIN risolto correttamente"
+        
+        log_info "Installazione Certbot..."
+        apt install -y certbot python3-certbot-nginx
+        
+        log_info "Configurazione SSL con Let's Encrypt..."
+        # Certbot per Nginx dockerizzato (certificati in /etc/letsencrypt)
+        certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@carpenteriaferrari.com
+        
+        if [ $? -eq 0 ]; then
+            log_success "SSL configurato per $DOMAIN"
+            log_info "Certificati salvati in /etc/letsencrypt/"
+            
+            # Test HTTPS dopo riavvio container
+            log_info "Riavvio container per applicare SSL..."
+            cd /home/mauri/gestionale-fullstack
+            docker compose restart nginx
+            
+            # Test HTTPS
+            sleep 10
+            if curl -s -o /dev/null -w "%{http_code}" https://$DOMAIN | grep -q "200\|301\|302"; then
+                log_success "HTTPS funzionante"
+            else
+                log_warning "HTTPS non testato (dominio non accessibile)"
+            fi
+        else
+            log_warning "SSL non configurato (dominio non accessibile o errore)"
+        fi
+    else
+        log_warning "Dominio $DOMAIN non risolto - SSL non configurato"
+        log_info "Per configurare SSL:"
+        log_info "1. Configura il DNS per puntare a questo server"
+        log_info "2. Esegui: sudo certbot certonly --standalone -d $DOMAIN"
+    fi
+    
     echo ""
 }
 
@@ -386,8 +389,8 @@ $(docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}")
 ✅ Applicazione avviata
 
 === ACCESSO APPLICAZIONE ===
-Frontend: http://$(ip route get 8.8.8.8 | awk '{print $7}')
-Backend: http://$(ip route get 8.8.8.8 | awk '{print $7}')/api
+Frontend: http://$(ip route get 8.8.8.8 | awk '{print $7}'):3000
+Backend: http://$(ip route get 8.8.8.8 | awk '{print $7}'):3001
 Database: $(ip route get 8.8.8.8 | awk '{print $7}'):5433
 
 === COMANDI UTILI ===
@@ -405,6 +408,7 @@ EOF
 main() {
     echo "=========================================="
     echo "INSTALLAZIONE AUTOMATICA GESTIONALE"
+    echo "Versione: 2.0.0"
     echo "Basato su: Server fisico 10.10.10.15"
     echo "SSH Porta: 27"
     echo "Data: $(date)"
@@ -413,14 +417,13 @@ main() {
     
     check_prerequisites
     update_system
-    install_docker_only
-    install_essential_tools
+    install_docker
     configure_network
     configure_ssh
     configure_firewall
-    install_docker
     clone_repository
     setup_application
+    setup_ssl
     post_install_checks
     generate_report
     
