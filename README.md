@@ -32,7 +32,7 @@ sudo ./deploy-vm-automatico.sh
 ## 📋 Prerequisiti
 - Ubuntu Server 24.04.2 LTS
 - Minimo 2GB RAM
-- Minimo 10GB spazio disco
+- Minimo 3GB spazio disco (per VM di test)
 - Connessione internet stabile
 
 ## 🔧 Configurazione

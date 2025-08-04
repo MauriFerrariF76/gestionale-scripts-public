@@ -104,10 +104,10 @@ update_system() {
 install_nodejs() {
     log_info "=== INSTALLAZIONE NODE.JS E NPM ==="
     
-    log_info "Installazione Node.js 18.x LTS..."
+    log_info "Installazione Node.js 20.x LTS..."
     
     # Aggiunta repository NodeSource
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
     
     # Installazione Node.js
     apt install -y nodejs
@@ -121,8 +121,8 @@ install_nodejs() {
     
     # Installazione globali utili
     log_info "Installazione pacchetti globali npm..."
-    # Usa versione npm compatibile con Node.js 18
-    npm install -g npm@10.8.2
+    # Usa versione npm compatibile con Node.js 20
+    npm install -g npm@latest
     npm install -g yarn
     
     log_success "Node.js e npm configurati"
