@@ -100,55 +100,63 @@ update_system() {
     echo ""
 }
 
-# Installazione Node.js e npm
-install_nodejs() {
-    log_info "=== INSTALLAZIONE NODE.JS E NPM ==="
+# Installazione Docker (sostituisce Node.js host)
+install_docker_only() {
+    log_info "=== INSTALLAZIONE DOCKER ==="
     
-    log_info "Installazione Node.js 20.x LTS..."
+    log_info "Rimozione versioni precedenti..."
+    apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
     
-    # Aggiunta repository NodeSource
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    log_info "Installazione prerequisiti Docker..."
+    apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
     
-    # Installazione Node.js
-    apt install -y nodejs
+    log_info "Aggiunta repository Docker..."
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+    log_info "Aggiornamento pacchetti..."
+    apt update
+    
+    log_info "Installazione Docker..."
+    apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    
+    log_info "Configurazione utente Docker..."
+    usermod -aG docker $SUDO_USER
+    
+    log_info "Avvio servizio Docker..."
+    systemctl enable docker
+    systemctl start docker
     
     # Verifica installazione
-    NODE_VERSION=$(node --version)
-    NPM_VERSION=$(npm --version)
+    DOCKER_VERSION=$(docker --version)
+    COMPOSE_VERSION=$(docker compose version)
     
-    log_success "Node.js installato: $NODE_VERSION"
-    log_success "npm installato: $NPM_VERSION"
-    
-    # Installazione globali utili
-    log_info "Installazione pacchetti globali npm..."
-    # Usa versione npm compatibile con Node.js 20
-    npm install -g npm@latest
-    npm install -g yarn
-    
-    log_success "Node.js e npm configurati"
+    log_success "Docker installato: $DOCKER_VERSION"
+    log_success "Docker Compose: $COMPOSE_VERSION"
+    log_success "Docker configurato"
     echo ""
 }
 
-# Installazione pacchetti aggiuntivi per sviluppo
-install_development_tools() {
-    log_info "=== INSTALLAZIONE STRUMENTI DI SVILUPPO ==="
+# Installazione strumenti essenziali per Docker
+install_essential_tools() {
+    log_info "=== INSTALLAZIONE STRUMENTI ESSENZIALI ==="
     
-    log_info "Installazione strumenti di build..."
-    npm install -g typescript ts-node nodemon
+    log_info "Installazione strumenti di sistema..."
+    apt install -y curl wget git htop net-tools
     
-    log_info "Installazione strumenti di debugging..."
-    apt install -y strace ltrace gdb
+    log_info "Installazione client PostgreSQL..."
+    apt install -y postgresql-client
     
-    log_info "Installazione strumenti di analisi rete..."
-    apt install -y tcpdump nmap netcat-openbsd
+    log_info "Installazione Certbot per SSL..."
+    apt install -y certbot python3-certbot-nginx
     
     log_info "Installazione strumenti di compressione..."
     apt install -y zip unzip tar gzip bzip2
     
     log_info "Installazione editor di testo..."
-    apt install -y nano vim
+    apt install -y nano
     
-    log_success "Strumenti di sviluppo installati"
+    log_success "Strumenti essenziali installati"
     echo ""
 }
 
@@ -299,20 +307,19 @@ setup_application() {
 post_install_checks() {
     log_info "=== VERIFICHE POST-INSTALLAZIONE ==="
     
-    log_info "Verifica Node.js e npm..."
-    if command -v node > /dev/null && command -v npm > /dev/null; then
-        log_success "Node.js: $(node --version)"
-        log_success "npm: $(npm --version)"
+    log_info "Verifica Docker..."
+    if command -v docker > /dev/null && command -v docker-compose > /dev/null; then
+        log_success "Docker: $(docker --version)"
+        log_success "Docker Compose: $(docker-compose --version)"
     else
-        log_error "Node.js o npm non installati"
+        log_error "Docker o Docker Compose non installati"
     fi
     
-    log_info "Verifica strumenti di sviluppo..."
-    if command -v typescript > /dev/null && command -v ts-node > /dev/null; then
-        log_success "TypeScript: $(npx tsc --version)"
-        log_success "ts-node: installato"
+    log_info "Verifica Docker daemon..."
+    if docker ps > /dev/null 2>&1; then
+        log_success "Docker daemon attivo"
     else
-        log_warning "TypeScript o ts-node non installati"
+        log_warning "Docker daemon non attivo"
     fi
     
     log_info "Verifica pacchetti sistema..."
@@ -406,8 +413,8 @@ main() {
     
     check_prerequisites
     update_system
-    install_nodejs
-    install_development_tools
+    install_docker_only
+    install_essential_tools
     configure_network
     configure_ssh
     configure_firewall

@@ -6,7 +6,8 @@ Script pubblici per il deploy automatico del gestionale aziendale.
 ## 📁 Script Disponibili
 
 ### 🎯 Script Principali
-- **`install-gestionale-completo.sh`** - Deploy automatico completo
+- **`install-gestionale-completo.sh`** - Deploy automatico completo (Docker-based)
+- **`deploy-docker-ottimizzato.sh`** - Deploy ottimizzato con Docker
 - **`deploy-vm-automatico.sh`** - Deploy automatico su VM
 - **`test-vm-clone.sh`** - Test automatico su VM
 - **`monitor-deploy-vm.sh`** - Monitoraggio avanzato
@@ -19,6 +20,14 @@ Script pubblici per il deploy automatico del gestionale aziendale.
 wget https://raw.githubusercontent.com/MauriFerrariF76/gestionale-fullstack/main/public-scripts/install-gestionale-completo.sh
 chmod +x install-gestionale-completo.sh
 sudo ./install-gestionale-completo.sh
+```
+
+### Deploy Docker Ottimizzato
+```bash
+# Download diretto
+wget https://raw.githubusercontent.com/MauriFerrariF76/gestionale-fullstack/main/public-scripts/deploy-docker-ottimizzato.sh
+chmod +x deploy-docker-ottimizzato.sh
+./deploy-docker-ottimizzato.sh
 ```
 
 ### Deploy su VM di Test
